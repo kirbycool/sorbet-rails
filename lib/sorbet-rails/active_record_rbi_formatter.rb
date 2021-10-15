@@ -20,6 +20,11 @@ class SorbetRails::ActiveRecordRbiFormatter
     parlour.root.create_class('ActiveRecord::Base') do |class_rbi|
       create_elem_specific_query_methods(class_rbi, type: 'T.attached_class', class_method: true)
       create_general_query_methods(class_rbi, class_method: true)
+
+      class_rbi.create_method('destroy', return_type: "T::Boolean")
+      class_rbi.create_method('destroy!')
+      class_rbi.create_method('delete', return_type: "T::Boolean")
+      class_rbi.create_method('delete!')
     end
 
     parlour.rbi
@@ -38,10 +43,10 @@ class SorbetRails::ActiveRecordRbiFormatter
 
     parlour.root.create_class('ActiveRecord::Relation') do |class_rbi|
       class_rbi.create_include("Enumerable")
-      # class_rbi.create_constant(
-      #   "Elem",
-      #   value: "type_member(fixed: T.untyped)",
-      # )
+      class_rbi.create_constant(
+        "Elem",
+        value: "type_member(fixed: T.untyped)",
+      )
 
       create_elem_specific_query_methods(class_rbi, type: 'Elem', class_method: false)
       create_general_query_methods(class_rbi, class_method: false)
@@ -70,6 +75,9 @@ class SorbetRails::ActiveRecordRbiFormatter
         return_type: "T::Array[T.type_parameter(:U)]",
       )
       class_rbi.create_method('empty?', return_type: "T::Boolean")
+
+      class_rbi.create_method('destroy_all', return_type: "T::Boolean")
+      class_rbi.create_method('delete_all', return_type: "T::Boolean")
     end
 
     parlour.root.create_class("ActiveRecord::AssociationRelation", superclass: "ActiveRecord::Relation") do |class_rbi|
@@ -294,6 +302,19 @@ class SorbetRails::ActiveRecordRbiFormatter
       class_rbi.create_method(
         boolean_method,
         return_type: "T::Boolean",
+        class_method: class_method,
+      )
+    end
+
+    aggregate_methods = %w(maximum minimum)
+    aggregate_methods.each do |aggregate_method|
+      class_rbi.create_method(
+        aggregate_method,
+        parameters: [
+          Parameter.new("column", type: "T.any(String, Symbol)"),
+          Parameter.new("options:", type: "T.any(String, Symbol)", default: "nil")
+        ],
+        return_type: "T.untyped",
         class_method: class_method,
       )
     end
